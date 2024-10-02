@@ -43,6 +43,8 @@ class ScreenSaverBuilder:
             video_ext = os.path.splitext(video_path)[1]
             shutil.copy2(video_path, self.ss_video_name + video_ext)
             
+            # TODO: try rm -rf ./build and ~/Library/Developer/Xcode/DerivedData/myscreensaver/Build/*
+            
             xcode_build_cmd = [
                 'xcodebuild',
                 'clean',
