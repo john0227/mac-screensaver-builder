@@ -6,4 +6,5 @@ venv
 
 # project specific stuff
 **/build
-**/asset/*
+myscreensaver/**/*.png
+myscreensaver/**/*.mp4
