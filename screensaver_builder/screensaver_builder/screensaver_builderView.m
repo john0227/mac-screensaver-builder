@@ -6,6 +6,8 @@
     self = [super initWithFrame:frame isPreview:isPreview];
     if (self) {
         self.wantsLayer = YES; // Enable layer backing for the view
+        NSURL *imageURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"asset/preview" withExtension:nil];
+        self.previewImage = [[NSImage alloc] initWithContentsOfURL:imageURL];
     }
     return self;
 }
@@ -13,19 +15,9 @@
 - (void)startAnimation {
     [super startAnimation];
 
-    NSURL *videoURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"{{video_path}}" withExtension:nil];
+    NSURL *videoURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"asset/video" withExtension:nil];
     AVAsset *asset = [AVAsset assetWithURL:videoURL];
     AVAssetImageGenerator *imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:asset];
-
-    // Generate the first frame
-    CMTime time = CMTimeMake(0, 1); // 0 seconds
-    [imageGenerator generateCGImagesAsynchronouslyForTimes:@[[NSValue valueWithCMTime:time]]
-                                          completionHandler:^(CMTime requestedTime, CGImageRef image, CMTime actualTime, AVAssetImageGeneratorResult result, NSError *error) {
-        if (result == AVAssetImageGeneratorSucceeded && image) {
-            self.firstFrameImage = [[NSImage alloc] initWithCGImage:image size:NSZeroSize];
-            [self setNeedsDisplay:YES]; // Request a redraw
-        }
-    }];
     
     self.player = [AVPlayer playerWithURL:videoURL];
     self.player.volume = 0.0;
@@ -46,8 +38,8 @@
 - (void)drawRect:(NSRect)dirtyRect {
     [super drawRect:dirtyRect];
 
-    if (self.firstFrameImage) {
-        [self.firstFrameImage drawInRect:self.bounds];
+    if (self.previewImage) {
+        [self.previewImage drawInRect:self.bounds];
     }
 }
 

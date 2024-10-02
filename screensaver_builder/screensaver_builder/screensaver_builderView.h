@@ -6,6 +6,6 @@
 
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) AVPlayerLayer *playerLayer;
-@property (nonatomic, strong) NSImage *firstFrameImage;
+@property (nonatomic, strong) NSImage *previewImage;
 
 @end
