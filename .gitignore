@@ -1,0 +1,9 @@
+# virtual envs
+venv
+
+# mac stuff
+.DS_Store
+
+# project specific stuff
+**/build
+**/asset/*
