@@ -6,6 +6,7 @@
     self = [super initWithFrame:frame isPreview:isPreview];
     if (self) {
         self.wantsLayer = YES; // Enable layer backing for the view
+        self.previewImage = [NSImage imageNamed:@"preview.png"];
     }
     return self;
 }
@@ -13,8 +14,18 @@
 - (void)startAnimation {
     [super startAnimation];
 
-    NSURL *videoURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"video" withExtension:@"mp4"];
+    NSURL *mp4URL = [[NSBundle bundleForClass:[self class]] URLForResource:@"video" withExtension:@"mp4"];
+    NSURL *movURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"video" withExtension:@"mov"];
+
+    NSURL *videoURL;
+    if ([[NSFileManager defaultManager] fileExistsAtPath:[mp4URL path]]) {
+        videoURL = mp4URL;
+    } else {
+        videoURL = movURL;
+    }
+
     self.player = [AVPlayer playerWithURL:videoURL];
+    self.player.volume = 0.0;
 
     self.playerLayer = [AVPlayerLayer playerLayerWithPlayer:self.player];
     self.playerLayer.frame = self.bounds;
@@ -38,6 +49,23 @@
     [super stopAnimation];
     [self.player pause];
     [[NSNotificationCenter defaultCenter] removeObserver:self];
+}
+
+- (void)drawRect:(NSRect)dirtyRect {
+    [super drawRect:dirtyRect];
+
+    // Check if the image is loaded
+    if (self.previewImage) {
+        // Calculate the image rect to center it
+        NSRect imageRect;
+        NSSize imageSize = [self.previewImage size];
+        imageRect.size = imageSize;
+        imageRect.origin.x = (NSWidth(self.bounds) - imageSize.width) / 2;
+        imageRect.origin.y = (NSHeight(self.bounds) - imageSize.height) / 2;
+
+        // Draw the image
+        [self.previewImage drawInRect:imageRect];
+    }
 }
 
 @end

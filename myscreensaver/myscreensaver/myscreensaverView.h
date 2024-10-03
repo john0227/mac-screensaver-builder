@@ -5,5 +5,6 @@
 
 @property (strong) AVPlayer *player;
 @property (strong) AVPlayerLayer *playerLayer;
+@property (strong) NSImage *previewImage;
 
 @end
