@@ -8,3 +8,6 @@ venv
 **/build
 myscreensaver/**/*.png
 myscreensaver/**/*.mp4
+myscreensaver/**/*.mov
+myscreensaver/DerivedData
+logs
