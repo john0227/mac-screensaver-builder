@@ -4,6 +4,10 @@ venv
 # mac stuff
 .DS_Store
 
+# XCode stuff
+xcuserdata/
+xcshareddata
+
 # project specific stuff
 **/build
 myscreensaver/**/*.png
