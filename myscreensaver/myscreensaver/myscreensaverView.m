@@ -14,14 +14,18 @@
 - (void)startAnimation {
     [super startAnimation];
 
+    // Video guaranteed to exist as either mp4, mov, or m4v
     NSURL *mp4URL = [[NSBundle bundleForClass:[self class]] URLForResource:@"video" withExtension:@"mp4"];
     NSURL *movURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"video" withExtension:@"mov"];
+    NSURL *m4vURL = [[NSBundle bundleForClass:[self class]] URLForResource:@"video" withExtension:@"m4v"];
 
     NSURL *videoURL;
     if ([[NSFileManager defaultManager] fileExistsAtPath:[mp4URL path]]) {
         videoURL = mp4URL;
-    } else {
+    } else if ([[NSFileManager defaultManager] fileExistsAtPath:[movURL path]]) {
         videoURL = movURL;
+    } else {
+        videoURL = m4vURL;
     }
 
     self.player = [AVPlayer playerWithURL:videoURL];
