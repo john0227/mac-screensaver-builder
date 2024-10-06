@@ -112,15 +112,9 @@ class ScreenSaverBuilder:
     
     @staticmethod
     def refresh_screensaver_procs():
-        # Kill ScreenSaverAgent
-        os.system("killall ScreenSaverAgent 2> /dev/null")
-        
-        # Kill legacyScreenSaver
-        p = subprocess.Popen(["pgrep", "legacyScreenSaver"], stdout=subprocess.PIPE)
-        stdout, _ = p.communicate()
-        pids = stdout.decode("utf-8").split()
-        for pid in pids:
-            os.system(f"kill -9 {pid}")
+        os.system("killall -KILL ScreenSaverAgent 2> /dev/null")
+        os.system("killall -KILL legacyScreenSaver 2> /dev/null")
+        os.system('killall -KILL "Screen Saver" 2> /dev/null')
         
     def delete_assets(self):
         for asset in os.listdir(self.asset_path):
