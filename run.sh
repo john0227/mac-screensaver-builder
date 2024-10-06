@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/zsh
 
 # Quit script on error
 set -e
@@ -39,7 +39,7 @@ fi
 source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt > /dev/null
+pip install -r requirements.txt > /dev/null 2> /dev/null
 
 # Run the program
-python build_screensaver.py
+python build_screensaver.py > /dev/null 2> /dev/null
