@@ -1,13 +1,71 @@
 import os
+import re
 import shutil
 import subprocess
-import re
 import tkinter
 import tkinter.filedialog as filedialog
 import tkinter.ttk as ttk
+import uuid
 from typing import Callable
 
 import cv2
+
+
+class TargetTemplate:
+    def __init__(self, target_name: str, project_path: str):
+        self.target_name = target_name
+        
+        self.project_path = project_path
+        self.template_folder = os.path.join(os.path.dirname(__file__), "template")
+        self.target_folder = os.path.join(self.project_path, self.target_name)
+        
+        self.template_filepaths = [
+            os.path.join(self.template_folder, "project.pbxproj.template"),
+            os.path.join(self.template_folder, "templateView.h.template"),
+            os.path.join(self.template_folder, "templateView.m.template")
+        ]
+        self.rendered_filepaths = [
+            os.path.join(self.project_path, "myscreensaver.xcodeproj", "project.pbxproj"),
+            os.path.join(self.target_folder, f"{self.target_name}View.h"),
+            os.path.join(self.target_folder, f"{self.target_name}View.m")
+        ]
+        self.template_mapping = dict(zip(self.template_filepaths, self.rendered_filepaths))
+            
+    def __create_target(self):
+        # Create target directory
+        if not os.path.isdir(self.target_folder):
+            os.mkdir(self.target_folder)
+            
+        # Back up project.pbxproj
+        project_pbxproj = self.rendered_filepaths[0]
+        backed_project_pbxproj = os.path.join(self.template_folder, "project.pbxproj.bak")
+        if os.path.isfile(project_pbxproj):
+            shutil.copy(project_pbxproj, backed_project_pbxproj)
+    
+    def create_target(self, **kwargs):
+        self.__create_target()
+        
+        for template_fp in self.template_filepaths:
+            with open(template_fp) as f:
+                template = f.read()
+        
+            for k, v in kwargs.items():
+                template_str = "{{" + k + "}}"
+                template = template.replace(template_str, v)
+            
+            with open(self.template_mapping[template_fp], "w") as f:
+                f.write(template)
+                
+    def delete_target(self):
+        # Remove target directory
+        if os.path.isdir(self.target_folder):
+            shutil.rmtree(self.target_folder)
+        
+        # Restore project.pbxproj
+        project_pbxproj = self.rendered_filepaths[0]
+        backed_project_pbxproj = os.path.join(self.template_folder, "project.pbxproj.bak")
+        if os.path.isfile(backed_project_pbxproj):
+            shutil.copy(backed_project_pbxproj, project_pbxproj)
 
 
 class ScreenSaverBuilder:
@@ -16,13 +74,14 @@ class ScreenSaverBuilder:
         self.bundle_id = "com.cupcakes.myscreensaver"
         
         self.root_path = os.path.dirname(__file__)
-        self.ssbuilder_path = os.path.join(self.root_path, self.xcode_projname)
-        self.asset_path = os.path.join(self.ssbuilder_path, self.xcode_projname)
-        self.build_path = os.path.join(self.ssbuilder_path, self.xcode_projname, "build")
+        self.project_path = os.path.join(self.root_path, self.xcode_projname)
         self.log_path = os.path.join(self.root_path, "logs")
         
         self.ss_path = os.path.join(os.path.expanduser("~"), "Library", "Screen Savers")
-        
+    
+    def init_target_paths(self, target_name: str):
+        self.asset_path = os.path.join(self.project_path, target_name)
+        self.build_path = os.path.join(self.project_path, target_name, "build")
         self.ss_video_name = os.path.join(self.asset_path, "video")
         self.ss_preview_name = os.path.join(self.asset_path, "preview.png")
     
@@ -78,51 +137,77 @@ class ScreenSaverBuilder:
             set_result("Please select a video file in .mp4, .mov, or .m4v format")
             return
         
-        # Clear previous build cache
-        self.clear_build_cache()
+        target_name = re.sub(r"\s+", "", ss_name)
+        self.init_target_paths(target_name)
         
-        # Read first frame into preview image
-        self.get_preview_image(video_path)
-        
-        # Copy video to asset path
-        video_ext = os.path.splitext(video_path)[1]
-        shutil.copy2(video_path, self.ss_video_name + video_ext)
-        
-        xcode_build_cmd = [
-            "xcodebuild",
-            "clean",
-            "build",
-            "-project",
-            os.path.join(self.ssbuilder_path, f"{self.xcode_projname}.xcodeproj"),
-            "-configuration",
-            "Debug",
-            f"PRODUCT_NAME={ss_name}",
-            f"SYMROOT={self.build_path}",
-            f"CONFIGURATION_BUILD_DIR={self.build_path}",
-            "-change"
-            f"PRODUCT_BUNDLE_IDENTIFIER={self.bundle_id}.{re.sub(r'\s+', '-', ss_name)}"
-        ]
-        p = subprocess.Popen(xcode_build_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
-        stdout, stderr = p.communicate()
-        if p.returncode != 0:
-            if is_retry:
-                # TODO: log stderr to tmp file and give user option to open text editor
-                set_result("Something went wrong")
-                os.system(f'echo "{(stderr or b'').decode('utf-8')}" > logs/err.log')
-            else:
-                self.build_screensaver(video_path, ss_name, set_result, is_retry=True)
-            return
-        
-        os.system(f'echo "{stdout.decode('utf-8') or b''}" > logs/run.log')
-        
-        self.install_screensaver(ss_name)
-        set_result("Screensaver built successfully!")
-        
-        # Clean up after build
-        self.delete_assets()
-        self.clear_build_cache()
-        self.refresh_screensaver_procs()
+        target_builder = TargetTemplate(target_name, self.project_path)
+        try:
+            # Create new target
+            generate_uuid = lambda: "".join(str(uuid.uuid4()).upper().split('-')[1:])
+            target_builder.create_target(
+                TARGET_NAME=target_name,
+                UUID_BUILD_CONFIGURATION=generate_uuid(),
+                UUID_DEBUG_CONFIGURATION=generate_uuid(),
+                UUID_FRAMEWORKS=generate_uuid(),
+                UUID_GROUP=generate_uuid(),
+                UUID_HEADERS=generate_uuid(),
+                UUID_PROJECT=generate_uuid(),
+                UUID_RELEASE_CONFIGURATION=generate_uuid(),
+                UUID_RESOURCES=generate_uuid(),
+                UUID_SAVER=generate_uuid(),
+                UUID_SOURCES=generate_uuid(),
+            )
+            
+            # Clear previous build cache
+            self.clear_build_cache()
+            
+            # Read first frame into preview image
+            self.get_preview_image(video_path)
+            
+            # Copy video to asset path
+            video_ext = os.path.splitext(video_path)[1]
+            shutil.copy2(video_path, self.ss_video_name + video_ext)
+            
+            xcode_build_cmd = [
+                "xcodebuild",
+                "clean",
+                "build",
+                "-project",
+                os.path.join(self.project_path, f"{self.xcode_projname}.xcodeproj"),
+                "-target",
+                target_name,
+                "-configuration",
+                "Release",
+                f"PRODUCT_NAME={ss_name}",
+                f"SYMROOT={self.build_path}",
+                f"CONFIGURATION_BUILD_DIR={self.build_path}",
+            ]
+            p = subprocess.Popen(xcode_build_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            stdout, stderr = p.communicate()
+            if p.returncode != 0:
+                if is_retry:
+                    # TODO: log stderr to tmp file and give user option to open text editor
+                    set_result("Something went wrong")
+                    with open("logs/err.log", "w") as f:
+                        f.write((stderr or b'').decode('utf-8'))
+                else:
+                    self.build_screensaver(video_path, ss_name, set_result, is_retry=True)
+                return
+            
+            os.system(f'echo "{stdout.decode('utf-8') or b''}" > logs/run.log')
+            
+            self.install_screensaver(ss_name)
+            set_result("Screensaver built successfully!")
+        except Exception as e:
+            # TODO: log error
+            print(str(e))
+        finally:
+            # Clean up after build
+            self.delete_assets()
+            self.clear_build_cache()
+            self.refresh_screensaver_procs()
+            target_builder.delete_target()
 
 
 class ScreenSaverUI:
