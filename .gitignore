@@ -1,3 +1,6 @@
+# vscode stuff
+.vscode
+
 # virtual envs
 venv
 
@@ -8,10 +11,13 @@ venv
 xcuserdata/
 xcshareddata
 
+# python stuff
+__pycache__
+
 # project specific stuff
-**/build
-myscreensaver/**/*.png
-myscreensaver/**/*.mp4
-myscreensaver/**/*.mov
-myscreensaver/DerivedData
+build
+*.png
+*.mp4
+*.mov
+*.m4v
 logs
