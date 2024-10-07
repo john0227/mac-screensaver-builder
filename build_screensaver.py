@@ -122,7 +122,13 @@ class ScreenSaverBuilder:
                 os.remove(os.path.join(self.asset_path, asset))
     
     def install_screensaver(self, ss_name: str):
+        # .saver file is a bundle (so technically a directory)
         saver_path = os.path.join(self.build_path, f"{ss_name}.saver")
+        installation_path = os.path.join(self.ss_path, f"{ss_name}.saver")
+        
+        if os.path.isdir(installation_path):
+            shutil.rmtree(installation_path, ignore_errors=True)
+        
         shutil.move(saver_path, self.ss_path)
 
     def build_screensaver(self, video_path: str, ss_name: str, set_result: Callable[[str], None], is_retry=False):
