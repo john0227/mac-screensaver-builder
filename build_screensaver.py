@@ -84,8 +84,9 @@ class ScreenSaverBuilder:
         self.build_path = os.path.join(self.project_path, target_name, "build")
         self.ss_video_name = os.path.join(self.asset_path, "video")
         self.ss_preview_name = os.path.join(self.asset_path, "preview.png")
+        self.ss_thumbnail_name = os.path.join(self.asset_path, "thumbnail.png")
     
-    def get_preview_image(self, video_path: str):
+    def create_preview_and_thumbnail_image(self, video_path: str):
         cap = cv2.VideoCapture(video_path)
 
         if not cap.isOpened():
@@ -93,7 +94,19 @@ class ScreenSaverBuilder:
 
         ret, frame = cap.read()
         if ret:
+            # Create preview image
             cv2.imwrite(self.ss_preview_name, frame)
+            
+            # Create thumbnail image
+            height, width = frame.shape[:2]
+            aspect_ratio = height / width
+            
+            desired_width = 500
+            new_width = desired_width
+            new_height = int(new_width * aspect_ratio)
+            
+            thumbnail = cv2.resize(frame, (new_width, new_height))
+            cv2.imwrite(self.ss_thumbnail_name, thumbnail)
 
         cap.release()
     
@@ -161,8 +174,8 @@ class ScreenSaverBuilder:
             # Clear previous build cache
             self.clear_build_cache()
             
-            # Read first frame into preview image
-            self.get_preview_image(video_path)
+            # Read first frame into preview image and thumbnail
+            self.create_preview_and_thumbnail_image(video_path)
             
             # Copy video to asset path
             video_ext = os.path.splitext(video_path)[1]
